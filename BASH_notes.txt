@@ -1,0 +1,331 @@
+# This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+################
+#### Basics ####
+################
+
+# Updating an Ubuntu based system.
+sudo apt-get update && sudo apt-get upgrade
+
+# My back up command for whole file system, with exclusions file. (BackupExclude must contain a line-brake separated list of dir exclusions)
+sudo tar -X /mnt/640GB/backups/BackupExclude -zcf /mnt/640GB/backups/SysBackup-$(date +%Y-%m-%d-\[%T\]).tar.gz /
+
+# My back up command for home directory, with a direct list of exclusions.
+sudo tar --exclude='.cache' --exclude='.steam' --exclude='.platformio' --exclude='.dropbox-dist' -zcvf /mnt/640GB/backups/HomeBackup-$(date +%Y-%m-%d-\[%T\]).tar.gz /home/<user>
+
+# Generate an SHA256 hash file for all files in a directory tree.
+rhash -rH directory/ > directory.sha256
+
+# (Hopefully) amazing piece of bash that computes all file's md5's as one.
+find /path/to/dir/ -type f -name "*.py" -exec md5sum {} + | awk '{print $1}' | sort | md5sum
+
+# Rsysn backup method (I have never actually messed with this).
+sudo rsync -aAXv / --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} /mnt/backup
+
+# Switches for tar, supposedly equal to above's -aAXv.
+--acls --xattrs
+
+# Proper path, useful for recovery.
+export PATH=/home/<username>/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+
+# Simple to use command line text/file editor.
+sudo nano /path/to/file.txt
+
+# Location of the file that sets PATH on startup.
+~.profile
+
+# The Ubuntu way of installing something on Ubuntu.
+sudo apt-get install <someprogram>
+
+# Installing from a download you found on the web, i.e. the Windowz way, i.e. usually the wrong way.
+sudo apt install ./Downloads/<someprogram>.deb
+
+# Adding a PPA repo to ubuntu. i.e. the Arch way. (using an alternative graphics driver for my AMD GPU as an example)
+sudo add-apt-repository ppa:oibaf/graphics-drivers
+
+# List all the packages in a PPA. (Example with the above GPU driver).
+awk '$1 == "Package:" { if (a[$2]++ == 0) print $2; }' /var/lib/apt/lists/*oibaf*graphics-drivers*Packages
+
+# Move a file, but keep a symlink to it's original location.
+sudo mv <source> <destination> 
+ln -s <destination> <source>
+
+# Decompress tar files
+tar tar xvzf <filename>
+
+# Building from source
+./configure
+make
+make install
+
+# One line of the above.
+./configure && make && make install
+
+########################################## NOTE #############################################
+#### The following can make powerful stuff... there are dragons too! You've been warned! ####
+#############################################################################################
+
+# Proper shebang
+#!/usr/bin/env bash
+
+# Useful script test utilities
+echo "Any text you want"
+echo $(date) # Prints current date
+sleep 2      # sleeps for 2 seconds
+
+# One liner for loop/polling daemons. (Sleep for 1 minute)
+while true; do <your_first_command>; <your_second_command>; sleep 1m; done
+
+# Run script as daemon.
+nohup ./somescript.sh `</dev/null` >nohup.out 2>&1 &
+
+# An example of "Piping" which allows you to create "composite commands" out of simpler ones.
+# Delete all but <N> newest files. (use case shown much farther down)
+ls -t | sed -e '1,<N>d' | xargs -d '\n' rm
+
+#how to spawn a dozen processes in one script
+echo "Spawning 12 processes"
+for i in {1..12} ;
+do
+    ( ./my_script & )
+; done
+
+# Launch program with a specific niceness
+nice -n nice_value program_name
+
+# Reset niceness if you know the process ID
+renice -n nice_value -p process_id
+
+# Kill a program by process ID.
+kill -9 <PID>
+
+# Start a multiplexed terminal
+screen
+# Alternatively...
+screen -S MyTerminal
+
+# List screen sessions
+screen -ls
+
+# Get back into screen session
+screen -r session_number
+# Alternatively...
+screen -r MyTerminal
+
+# Kill the screen terminal when you don't need it.
+exit
+
+###########################
+#### CHMOD/CHOWN Stuff ####
+###########################
+
+# Grid for chmod octal values
+#===================================================
+# Octal      Permission               rwx     Binary
+#===================================================
+#   7    read, write and execute      rwx      111
+#   6    read and write               rw-      110
+#   5    read and execute             r-x      101
+#   4    read only                    r--      100
+#   3    write and execute            -wx      011
+#   2    write only                   -w-      010
+#   1    execute only                 --x      001
+#   0    none                         ---      000 
+#===================================================
+
+#chown all files and folders.
+sudo chown -R username:username *
+
+#chmod all files and folders.
+sudo chmod -R 075 *
+
+#####################
+#### File system ####
+#####################
+
+# Mount www folder on server locally.
+sshfs <user>@24.113.56.195:/var/www/html /mnt/www
+
+# Unmount the above.
+fusermount -u /mnt/www
+
+# Way to check status (Pass|fail)
+if !( sshfs user@host:dir mountpoint ); then
+  echo "Mounting failed!"
+  exit 1
+fi
+
+# Commandline version of windirstat.
+ncdu
+
+# Simpler version of above (-H for human readable).
+df -H
+
+# The above is only useful for properly mounted stuff, for anything being difficult (e.g. LUKS).
+lsblk
+
+# Command to mount remote Windows folder. In this case, it's my multi-media box Video folder.
+sudo mount -t cifs -o username=$USER,password=$PASS,uid=$(id -u),gid=$(id -g) '//192.168.0.100/My Videos/' /mnt/RYZEN-VIDEO
+
+# Command to unmount above.
+umount /mnt/RYZEN-VIDEO
+
+# A drive/volume mounted at boot is mounted as root, and only accessible BY root.
+sudo chmod 777 /mnt/share/
+
+# Edit file for mounting volumes/drives on boot.
+sudo nano /etc/fstab
+
+# Edit samba config.
+sudo nano /etc/samba/smb.conf
+
+# Reload samba config.
+sudo smbcontrol all reload-config
+
+# Need to shutdown samba if it's being used.
+sudo service smbd stop
+
+# Unmount a samba drive when done.
+sudo umount /srv/samba/portable
+
+
+###################
+#### Key Stuff ####
+###################
+
+# Command to generate strong SSH keys.
+ssh-keygen -t ed25519 -a 100
+
+# Neat way to generate key files.
+dd if=/dev/random bs=32 count=1 of=/path/to/keyfile
+
+
+###################
+#### SSH Stuff ####
+###################
+
+#### Note: All that "screen" business above comes in real handy right here.
+
+#command to SSH into server. IP can be the above remote IP.
+ssh -i /home/<user>/.ssh/id_ed25519 <user>@24.113.56.195
+ssh <user>@24.113.56.195
+
+# SSH will refuse to work if the key file is readable by anyone other than the owner.
+sudo chmod 600 <SSH-KEY-FILE>
+
+#command to mount remote (over Internet) directory through SSH. Authenticating using keyfile.
+sshfs -o IdentityFile=~/.ssh/<keyfile> <user>@24.113.56.195:/srv/samba/share /mnt/samba
+
+# Method for tunneling to server's local port over ssh.
+ssh -L 9000:localhost:58846 <user>@24.113.56.195
+
+# Same as above, but supposedly without shell.
+ssh -nNT -L 9000:localhost:58846 <user>@24.113.56.195
+
+# Method for poor man's VPN, over SSH.
+ssh -D 8080 -N <user>@24.113.56.195
+
+
+####################
+#### LUKS stuff ####
+####################
+
+# Looking for unmounted volumes (e.g. LUKS).
+lsblk
+
+# File for mounting encrypted volumes/drives.
+sudo nano /etc/crypttab
+
+# Command for viewing LUKS encrypted volumes key slots.
+sudo cryptsetup luksDump /dev/sdb1
+
+# Command for adding a new key (keyfile) to an existing LUKS encrypted volume. You will need to have a way to unlock/decrypt it already.
+sudo cryptsetup luksAddKey /dev/sda1 ~/MyDocuments/keyfile
+
+# Open a LUKS encrypted container as a new block device. (as shown here, it will now exist as "crypt")
+sudo cryptsetup luksOpen /dev/sdb1 crypt
+
+# Sanity check to see if all is good.
+ls -l /dev/mapper/crypt
+
+# Mount the block device as and actual directory after it's been opened. (Mount point has to exist: sudo mkdir /mnt/cctv).
+sudo mount /dev/mapper/crypt /mnt/cctv
+
+# May need to shutdown samba if it's being used.
+
+# LUKS containers need to be closed after used.
+sudo cryptsetup luksClose crypt
+
+# fstab entry for 640GB spinner drive mounting, with LUKS encryption.
+/dev/mapper/640GB      /mnt/640GB                 ext4    defaults        0 0
+
+# crypttab entry for mounting LUKS encrypted volumes.
+640GB  /dev/sda1       /home/username/Documents/keyfile
+
+
+#####################
+#### Video Stuff ####
+#####################
+
+# Install ffmpeg
+sudo apt-get install ffmpeg
+
+# openRTSP, alternative to ffmpeg for RTSP streams. (though this worked like dog poo for me)
+sudo apt install livemedia-utils
+
+# Adding alternate graphics driver to Ubuntu.
+sudo add-apt-repository ppa:oibaf/graphics-drivers
+
+# On dynamic AMD systems, Prefixing applications with one of these manually selects GPU.
+DRI_PRIME=1 = AMD HD6000 series dedicated GPU (1GB VRAM).
+DRI_PRIME=0 = Intel embeded GPU
+
+# Benchmarking.
+--untimed --no-audio GALLIUM_HUD=fps 
+DRI_PRIME=1 mpv --hwdec=auto --scale=spline36 --x11-bypass-compositor=never --deband --player-operation-mode=pseudo-gui -- %U
+
+# MPV Player config file.
+sudo nano /etc/mpv/mpv.conf
+sudo nano ~/.config/mpv/input.conf
+#hwdec=vaapi
+
+# Interesting MPV player flags.
+--opengl-glfinish --opengl-waitvsync --opengl-swapinterval=1
+
+# Use ffmpeg to convert videos to audio, here I'm doing flac.
+ffmpeg -i "Nevergonnagiveyouup.webm" -map 0:a -c:a flac "Nevergonnagiveyouup.flac"
+
+# Capture a single frame
+ffmpeg -y -rtsp_transport tcp -i rtsp://<username>:<password>@<ip_address>/live[/<path>] -frames:v 1 test.jpg
+
+# URL for accessing my CCTV RTSP stream. (no, the username and password are not correct, lol. Obviously you'll need to change some things)
+rtsp://192.168.0.100:554/user=user&password=password&channel=1&stream=0.sdp?real_stream--rtp-caching=100
+
+# ffmpeg command for getting RTSP stream from CCTV and saving it to disk in 10 minute "manageable pieces".
+ffmpeg -hide_banner -loglevel -nostats fatal -rtsp_transport tcp -i "rtsp://192.168.0.100:554/user=user&password=password&channel=1&stream=0.sdp?real_stream--rtp-caching=512" -vcodec copy -acodec copy -map 0 -f segment -segment_time 600 -segment_format mp4 "1-FrontDoor-%08d.mp4"
+
+# Attempting the same thing, using openRTSP. This was garbage for me.
+openRTSP -v -F FrontDoor_ -c -D 1 -K -V -t -B 10000000 -b 10000000 -P 60 "rtsp://192.168.0.100:554/user=user&password=password&channel=1&stream=0.sdp?real_stream--rtp-caching=512"
+
+
+###########################################################################################
+# Combining what we know into two "one liner" commands can create a whole IP CCTV solution.
+###########################################################################################
+
+# The one liner daemon for getting the video feeds from the cameras, writing them to disk, and doing so in manageable pieces.
+while true; do echo "Capturing Video of: <camera>)"; cd /mnt/cctv; <one_of_the_two_command_from_above>; done
+
+# Duplicate the above command with different cameras if you got em #
+
+# The one liner daemon (using the delete script way up above) creates something that cleans old videos when your storage gets full.
+while true; do echo "Cleaned old videos: $(date)"; cd /mnt/cctv | ls -t | sed -e '1,7340d' | xargs -d '\n' rm; sleep 9m; done
+
+#####################
+#### Serial port ####
+#####################
+
+# Location of importance for EUSART/Serial/USB functionality.
+cd /etc/udev/rules.d/
+
+# How to get cura to stop fucking with all your serial ports
+export CURA_DEVICENAMES=/dev/serial/by-id/usb-Teensyduino_USB_Serial_12345-if00
